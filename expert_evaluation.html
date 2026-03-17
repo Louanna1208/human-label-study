@@ -24,7 +24,7 @@
         const RELATION_TYPES = ["increase", "decrease", "affects"];
         const TRAINING_EXAMPLES = [{"abstract": "Aging is associated with a progressive decline in several cognitive functions, such as episodic memory, working memory, and processing speed. Furthermore, it is associated with deficits in tasks requiring adaptation to external feedback of right or wrong, or task-switching.", "concepts": ["Aging", "cognitive functions", "episodic memory", "working memory", "processing speed", "adaptation to external feedback", "task-switching"], "triples": [{"source": "Aging", "target": "cognitive functions", "relation": "decrease"}, {"source": "Aging", "target": "episodic memory", "relation": "decrease"}, {"source": "Aging", "target": "working memory", "relation": "decrease"}, {"source": "Aging", "target": "processing speed", "relation": "decrease"}, {"source": "Aging", "target": "adaptation to external feedback", "relation": "decrease"}, {"source": "Aging", "target": "task-switching", "relation": "decrease"}]}, {"abstract": "Sleep deprivation increases reaction time and decreases accuracy. Caffeine affects performance in complex tasks.", "concepts": ["Sleep deprivation", "reaction time", "accuracy", "Caffeine", "performance in complex tasks"], "triples": [{"source": "Sleep deprivation", "target": "reaction time", "relation": "increase"}, {"source": "Sleep deprivation", "target": "accuracy", "relation": "decrease"}, {"source": "Caffeine", "target": "performance in complex tasks", "relation": "affects"}]}, {"abstract": "This study explored the use of process tracing techniques in examining the decision-making processes of older and younger adults. Thirty-six college-age and thirty-six retirement-age participants decided which one of six cars they would purchase on the basis of computer-accessed data. They provided information search protocols. Results indicate that total time to reach a decision did not differ according to age. However, retirement-age participants used less information, spent more time viewing, and re-viewed fewer bits of information than college-age participants. Information search patterns differed markedly between age groups.", "concepts": ["older adults", "younger adults", "used information", "time viewing", "re-viewed information", "age", "Information search patterns"], "triples": [{"source": "older adults", "target": "used information", "relation": "decrease"}, {"source": "older adults", "target": "time viewing", "relation": "increase"}, {"source": "older adults", "target": "re-viewed information", "relation": "decrease"}, {"source": "age", "target": "Information search patterns", "relation": "affects"}]}];
         const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL_HERE";
+        const SCRIPT_URL = "AKfycbxeN5Tj6HudcDWC9hrbuX2_FJmIhEGYLRZsBM3040lbSfE0yF-A8_fTNCrF2813AEC12g";
         const PARTICIPANT_ID = (() => {
             try {
                 const key = 'participant_id';
@@ -39,6 +39,34 @@
                 return "anonymous";
             }
         })();
+
+        function submitToGoogleSheet(payload) {
+            try {
+                if (!SCRIPT_URL || SCRIPT_URL.startsWith("PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL_HERE")) return;
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = SCRIPT_URL;
+                form.target = "hidden_iframe";
+                form.style.display = "none";
+
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "payload";
+                input.value = JSON.stringify(payload);
+
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+
+                setTimeout(() => {
+                    if (form.parentNode) {
+                        form.parentNode.removeChild(form);
+                    }
+                }, 2000);
+            } catch (e) {
+                console.error("submitToGoogleSheet error", e);
+            }
+        }
 
         const tokenize = (text) => (text || "").trim().split(/\s+/).filter(Boolean);
         const cleanWord = (w) =>
@@ -276,29 +304,13 @@
                     }
                 });
                 const payload = {
+                    participant_id: PARTICIPANT_ID,
                     total_papers: DATA_SOURCES.length,
                     results: resultsWithTimings,
                     example_training: exampleResults,
                 };
 
-                if (SCRIPT_URL && !SCRIPT_URL.startsWith("PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL_HERE")) {
-                    try {
-                        fetch(SCRIPT_URL, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                participant_id: PARTICIPANT_ID,
-                                ...payload,
-                            }),
-                        }).catch((err) => {
-                            console.error("Failed to submit to Google Sheet", err);
-                        });
-                    } catch (err) {
-                        console.error("Failed to submit to Google Sheet", err);
-                    }
-                }
+                submitToGoogleSheet(payload);
 
                 const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -827,6 +839,7 @@
 
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
+    <iframe name="hidden_iframe" style="display:none;"></iframe>
 </body>
 </html>
     
